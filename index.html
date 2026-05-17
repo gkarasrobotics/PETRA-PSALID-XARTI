@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-  <title>Πέτρα · Ψαλίδι · Χαρτί | Gkaras Robotics</title>
+  <title>Rock Paper Scissors LIVE | Gkaras Robotics</title>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
   <style>
     * {
       margin: 0;
@@ -13,30 +16,36 @@
     }
 
     body {
-      background: linear-gradient(145deg, #1f2b3c 0%, #0f1a24 100%);
+      background: radial-gradient(circle at 10% 30%, #0b1a2e, #07121f);
       min-height: 100vh;
       display: flex;
-      justify-content: center;
       align-items: center;
-      font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, 'Roboto', sans-serif;
-      padding: 0.8rem;
+      justify-content: center;
+      font-family: 'Segoe UI', 'Poppins', 'Roboto', system-ui, sans-serif;
+      padding: 12px;
     }
 
     .game-container {
-      max-width: 1000px;
       width: 100%;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(2px);
-      border-radius: 2rem;
-      padding: 0.8rem;
-      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3);
+      max-width: 1100px;
+      margin: 0 auto;
+      height: auto;
+      min-height: 96vh;
+      display: flex;
+      flex-direction: column;
     }
 
     .game-card {
-      background: #fef9f0;
-      border-radius: 1.8rem;
-      padding: 1.2rem;
-      box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.3);
+      background: rgba(18, 28, 40, 0.85);
+      backdrop-filter: blur(12px);
+      border-radius: 2.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
     }
 
     /* header & stamp */
@@ -45,284 +54,239 @@
       align-items: baseline;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 0.8rem;
+      gap: 10px;
+      margin-bottom: 0.2rem;
     }
     .game-title {
-      font-size: 1.4rem;
+      font-size: clamp(1.6rem, 6vw, 2.4rem);
       font-weight: 800;
-      background: linear-gradient(135deg, #2c3e66, #1e2a47);
+      background: linear-gradient(135deg, #FFE6B0, #FFB347);
       background-clip: text;
       -webkit-background-clip: text;
       color: transparent;
-      display: flex;
-      align-items: center;
-      gap: 5px;
+      text-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
     .stamp {
-      background: #f0e5d2;
-      padding: 0.2rem 0.8rem;
-      border-radius: 30px;
-      font-size: 0.65rem;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+      padding: 0.3rem 1rem;
+      border-radius: 40px;
+      font-size: 0.75rem;
       font-weight: 600;
-      color: #8b6b3c;
-      border: 1px dashed #c0a16b;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
+      color: #FFD966;
+      border: 1px solid #FFD966;
       font-family: monospace;
-      white-space: nowrap;
     }
-    .stamp:before { content: "⚡"; font-size: 0.7rem; }
 
-    /* mode selector */
-    .mode-bar {
-      display: flex;
-      gap: 0.7rem;
-      background: #eef2f7;
-      border-radius: 2.5rem;
-      padding: 0.3rem;
-      margin: 0.6rem 0 1rem;
-    }
-    .mode-btn {
-      flex: 1;
+    /* room section */
+    .room-section {
+      background: rgba(255,255,240,0.1);
+      border-radius: 1.8rem;
+      padding: 1rem;
       text-align: center;
-      background: transparent;
-      border: none;
-      padding: 0.6rem 0.2rem;
-      border-radius: 2rem;
-      font-weight: bold;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      color: #2c3e5c;
     }
-    .mode-btn.active {
-      background: white;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      color: #1e3c5c;
+    .room-control {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .room-control input {
+      flex: 2;
+      min-width: 150px;
+      padding: 0.8rem 1rem;
+      border-radius: 3rem;
+      border: none;
+      background: #f0f3f8;
+      font-size: 1rem;
+      text-align: center;
+      font-weight: bold;
+    }
+    .room-control button {
+      background: #FFB347;
+      border: none;
+      padding: 0.8rem 1.4rem;
+      border-radius: 3rem;
+      font-weight: bold;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: 0.1s linear;
+      color: #1a2a3a;
+    }
+    .room-control button:active { transform: scale(0.96); }
+    .info-text {
+      font-size: 0.85rem;
+      margin-top: 12px;
+      color: #FFE5B4;
+    }
+    .status-badge {
+      background: #4CAF50;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 30px;
+      font-size: 0.7rem;
+      font-weight: bold;
+      margin-left: 8px;
     }
 
-    /* name inputs area */
+    /* players panel */
     .players-panel {
-      background: #eef2f7;
-      border-radius: 1.5rem;
-      padding: 0.8rem;
-      margin-bottom: 1rem;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 1.8rem;
+      padding: 1rem;
       display: flex;
       flex-wrap: wrap;
-      gap: 0.8rem;
-      justify-content: space-between;
+      gap: 1rem;
     }
     .player-name-field {
       flex: 1;
-      min-width: 120px;
     }
     .player-name-field label {
-      font-size: 0.7rem;
+      font-size: 0.8rem;
       font-weight: 600;
-      color: #4a5f7a;
+      color: #FFD966;
       display: block;
-      margin-bottom: 3px;
+      margin-bottom: 5px;
     }
     .player-name-field input {
       width: 100%;
-      padding: 0.6rem 0.5rem;
+      padding: 0.8rem;
       border-radius: 2rem;
-      border: 1px solid #cddae9;
-      background: white;
-      font-weight: 500;
+      border: none;
+      background: #1e2a36;
+      color: white;
+      font-weight: bold;
       text-align: center;
-      font-size: 0.85rem;
+      font-size: 1rem;
     }
 
     /* score panel */
     .score-panel {
       display: flex;
-      justify-content: space-between;
-      gap: 0.8rem;
-      margin: 0.8rem 0 1rem;
+      gap: 1.2rem;
+      margin: 0.5rem 0;
     }
     .score-card {
-      background: #e9edf2;
-      border-radius: 1.5rem;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 2rem;
       flex: 1;
-      padding: 0.7rem 0.3rem;
+      padding: 1rem 0.5rem;
       text-align: center;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.05), 0 5px 10px rgba(0,0,0,0.05);
+      backdrop-filter: blur(4px);
     }
     .score-label {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: #2d4059;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-      word-break: break-word;
-    }
-    .score-value {
-      font-size: 2.2rem;
-      font-weight: 800;
-      background: #1e2a36;
-      display: inline-block;
-      width: 70px;
-      border-radius: 50px;
-      color: #f9d56e;
-      line-height: 1.2;
-    }
-
-    /* duel display */
-    .duel-area {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.8rem;
-      margin: 0.8rem 0;
-    }
-    .choice-box {
-      flex: 1;
-      background: #f2f5f9;
-      border-radius: 1.5rem;
-      padding: 0.6rem;
-      text-align: center;
-    }
-    .choice-label {
-      font-weight: 600;
-      color: #4a627a;
-      font-size: 0.75rem;
-      letter-spacing: 0.5px;
-    }
-    .choice-display {
-      font-size: 1.6rem;
-      font-weight: 600;
-      background: #ffffffd9;
-      border-radius: 1.5rem;
-      padding: 0.6rem;
-      min-height: 70px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #FFE5B4;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      word-break: break-word;
+      margin-bottom: 12px;
+    }
+    .score-value {
+      font-size: 3rem;
+      font-weight: 800;
+      background: #00000066;
+      display: inline-block;
+      width: 100px;
+      border-radius: 60px;
+      color: #F9D56E;
+      line-height: 1.2;
+    }
+
+    /* duel area */
+    .duel-area {
+      display: flex;
+      gap: 1rem;
+      margin: 0.5rem 0;
+    }
+    .choice-box {
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 1.8rem;
+      padding: 1rem;
+      text-align: center;
+      flex: 1;
+    }
+    .choice-label {
+      font-weight: bold;
+      color: #FFD966;
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+    .choice-display {
+      font-size: 2rem;
+      font-weight: bold;
+      background: #0f1a24cc;
+      border-radius: 2rem;
+      padding: 1rem;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: #fff2d7;
     }
 
     .result-message {
-      background: #1e2f3f;
+      background: #1e2f3fcc;
       border-radius: 2rem;
-      padding: 0.8rem;
-      margin: 0.8rem 0;
+      padding: 1rem;
       text-align: center;
       font-weight: bold;
-      color: #f9eec1;
-      font-size: 0.9rem;
+      font-size: 1.1rem;
+      color: #F9EEC1;
     }
 
-    /* κουμπιά επιλογών - ενισχυμένα για αφή */
+    /* action buttons */
     .choices-row {
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.8rem;
-      margin: 1rem 0;
+      gap: 1rem;
+      margin: 0.5rem 0;
     }
     .choice-btn {
       background: white;
       border: none;
       border-radius: 3rem;
-      padding: 0.7rem 1rem;
-      font-size: 1.1rem;
-      font-weight: 700;
-      display: inline-flex;
+      padding: 1rem 0.8rem;
+      font-size: 1.4rem;
+      font-weight: bold;
+      display: flex;
       align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      transition: 0.08s linear;
-      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-      flex: 1;
       justify-content: center;
-      min-width: 100px;
-    }
-    .choice-btn span:last-child {
-      font-size: 0.9rem;
-    }
-    .choice-btn:active { transform: scale(0.96); background: #f5f0e8; }
-    .choice-btn.rock { background: #ffe0cf; border-bottom: 3px solid #c47a44; }
-    .choice-btn.paper { background: #e1f0fa; border-bottom: 3px solid #3f7e9c; }
-    .choice-btn.scissors { background: #ede2f7; border-bottom: 3px solid #8f6fae; }
-
-    .reset-btn, .reset-leaderboard {
-      background: #d9e2ec;
-      border: none;
-      border-radius: 2rem;
-      padding: 0.7rem;
-      font-weight: bold;
+      gap: 12px;
       cursor: pointer;
-      margin-top: 0.5rem;
-      font-size: 0.85rem;
       flex: 1;
-      text-align: center;
+      transition: 0.08s linear;
+      box-shadow: 0 8px 14px rgba(0, 0, 0, 0.3);
     }
-    .leaderboard {
-      background: #eef2f7;
-      border-radius: 1.5rem;
-      padding: 0.8rem;
-      margin-top: 1rem;
-    }
-    .leaderboard h4 {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.9rem;
-      margin-bottom: 8px;
-    }
-    .leaderboard-list {
-      max-height: 150px;
-      overflow-y: auto;
-      font-size: 0.8rem;
-    }
-    .leaderboard-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 6px 8px;
-      border-bottom: 1px solid #cddae9;
-    }
-    .turn-indicator {
-      background: #ffe4b5;
-      border-radius: 2rem;
-      padding: 5px 10px;
-      text-align: center;
+    .choice-btn:active { transform: scale(0.96); }
+    .choice-btn.rock { background: #FFB08C; border-bottom: 5px solid #C25D2E; }
+    .choice-btn.paper { background: #A3D0FF; border-bottom: 5px solid #3A7CA5; }
+    .choice-btn.scissors { background: #E2BAFF; border-bottom: 5px solid #8C5E9E; }
+    .choice-btn span:last-child { font-size: 1.2rem; }
+
+    .reset-btn {
+      background: #FFB347;
+      border: none;
+      width: 100%;
+      padding: 1rem;
+      border-radius: 3rem;
       font-weight: bold;
-      margin-bottom: 10px;
-      font-size: 0.85rem;
-    }
-    button {
-      font-family: inherit;
-    }
-    .double-btn {
-      display: flex;
-      gap: 10px;
-      margin-top: 5px;
+      font-size: 1.1rem;
+      margin-top: 0.5rem;
+      cursor: pointer;
     }
 
-    /* extra mobile fine-tuning */
-    @media (max-width: 550px) {
-      body { padding: 0.5rem; }
-      .game-card { padding: 0.9rem; }
-      .choice-btn { padding: 0.6rem 0.7rem; min-width: 80px; }
-      .choice-btn span:last-child { font-size: 0.8rem; }
-      .score-value { width: 55px; font-size: 1.8rem; }
-      .choice-display { font-size: 1.3rem; min-height: 60px; }
-      .game-title { font-size: 1.2rem; }
-      .stamp { font-size: 0.55rem; padding: 0.15rem 0.6rem; }
-    }
-
-    @media (max-width: 400px) {
-      .choice-btn { padding: 0.5rem 0.5rem; gap: 4px; }
-      .choice-btn span:first-child { font-size: 1.2rem; }
-      .choice-btn span:last-child { font-size: 0.7rem; }
-      .score-label { font-size: 0.75rem; }
+    @media (max-width: 650px) {
+      .game-card { padding: 1rem; gap: 0.8rem; }
+      .score-value { width: 70px; font-size: 2.2rem; }
+      .choice-display { font-size: 1.4rem; padding: 0.7rem; min-height: 70px; }
+      .choice-btn { padding: 0.8rem 0.5rem; font-size: 1.2rem; }
+      .choice-btn span:last-child { font-size: 1rem; }
+      .score-label { font-size: 1rem; }
     }
   </style>
 </head>
@@ -334,338 +298,308 @@
       <div class="stamp">⚡ gkaras robotics</div>
     </div>
 
-    <!-- Mode selection -->
-    <div class="mode-bar">
-      <button id="modeVsCPU" class="mode-btn active">🤖 VS Υπολογιστή</button>
-      <button id="modeTwoPlayer" class="mode-btn">👥 2 Παίκτες (PvP)</button>
+    <!-- Room Management -->
+    <div class="room-section">
+      <div><strong>🔗 ΔΩΜΑΤΙΟ LIVE ΜΑΧΗΣ</strong> <span id="connectionStatus" class="status-badge">● Αποσυνδεδεμένο</span></div>
+      <div class="room-control">
+        <input type="text" id="roomIdInput" placeholder="Κωδικός Δωματίου (π.χ. Battle1)">
+        <button id="createRoomBtn">✨ Δημιουργία / Είσοδος</button>
+        <button id="leaveRoomBtn" style="background:#7f8c8d;">↪︎ Έξοδος</button>
+      </div>
+      <div id="roomInfo" class="info-text">⚡ Δημιούργησε ή πληκτρολόγησε έναν κοινό κωδικό με τον φίλο σου.</div>
     </div>
 
-    <!-- Inputs ονομάτων (δυναμικά) -->
-    <div id="nameInputsContainer" class="players-panel"></div>
+    <!-- Name Inputs -->
+    <div class="players-panel">
+      <div class="player-name-field"><label>🧑 ΤΟ ΟΝΟΜΑ ΜΟΥ</label><input type="text" id="myNameInput" placeholder="Το όνομά σου"></div>
+      <div class="player-name-field"><label>🤝 ΑΝΤΙΠΑΛΟΣ</label><input type="text" id="opponentNameInput" value="Αναμονή..." disabled style="background:#e9ecef; color:#333;"></div>
+    </div>
 
-    <!-- Scoreboard (δυναμικό ανάλογα mode) -->
-    <div id="scorePanel" class="score-panel"></div>
+    <!-- Score Panel -->
+    <div class="score-panel">
+      <div class="score-card"><div class="score-label" id="myScoreLabel">🧑 ΕΓΩ</div><div class="score-value" id="myScore">0</div></div>
+      <div class="score-card"><div class="score-label" id="opponentScoreLabel">🤖 ΑΝΤΙΠΑΛΟΣ</div><div class="score-value" id="opponentScore">0</div></div>
+    </div>
 
-    <!-- Turn info (για PvP) -->
-    <div id="turnInfo" class="turn-indicator" style="display: none;"></div>
+    <!-- Duel Area -->
+    <div class="duel-area">
+      <div class="choice-box"><div class="choice-label" id="player1Label">Η ΕΠΙΛΟΓΗ ΜΟΥ</div><div class="choice-display" id="myChoiceDisplay">—</div></div>
+      <div class="choice-box"><div class="choice-label" id="player2Label">ΕΠΙΛΟΓΗ ΑΝΤΙΠΑΛΟΥ</div><div class="choice-display" id="opponentChoiceDisplay">❓ Κρυφή</div></div>
+    </div>
+    <div id="resultMessage" class="result-message">✨ Μπες σε δωμάτιο για να παίξεις ✨</div>
 
-    <!-- Επιλογές κινήσεων -->
+    <!-- Action Buttons -->
     <div class="choices-row">
       <button class="choice-btn rock" data-choice="rock">✊ <span>Πέτρα</span></button>
       <button class="choice-btn paper" data-choice="paper">✋ <span>Χαρτί</span></button>
       <button class="choice-btn scissors" data-choice="scissors">✌️ <span>Ψαλίδι</span></button>
     </div>
-
-    <!-- Duel area -->
-    <div class="duel-area">
-      <div class="choice-box"><div class="choice-label" id="player1Label">ΠΑΙΚΤΗΣ 1</div><div class="choice-display" id="p1ChoiceDisplay">—</div></div>
-      <div class="choice-box"><div class="choice-label" id="player2Label">ΠΑΙΚΤΗΣ 2 / PC</div><div class="choice-display" id="p2ChoiceDisplay">—</div></div>
-    </div>
-    <div id="resultMessage" class="result-message">✨ Διάλεξε λειτουργία και όνομα ✨</div>
-
-    <div class="double-btn">
-      <button id="resetGameBtn" class="reset-btn">🔄 Επαναφορά Σκορ</button>
-      <button id="resetLeaderboardBtn" class="reset-leaderboard">🏆 Μηδενισμός Κατάταξης</button>
-    </div>
-
-    <!-- Leaderboard -->
-    <div class="leaderboard">
-      <h4>🏅 ΚΑΤΑΤΑΞΗ (νίκες) ▼</h4>
-      <div id="leaderboardList" class="leaderboard-list">⏳ Φόρτωση...</div>
-    </div>
+    <button id="resetGameBtn" class="reset-btn">🔄 Επαναφορά Σκορ Δωματίου</button>
   </div>
 </div>
 
 <script>
-  // ---------- ΒΑΣΙΚΑ ΔΕΔΟΜΕΝΑ ----------
+  // ------------------- FIREBASE CONFIGURATION -------------------
+  // Αντικατέστησε τα παρακάτω με τα δικά σου στοιχεία από το Firebase Console
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    databaseURL: "YOUR_DATABASE_URL",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+  
+  // ------------------- Game State -------------------
+  let currentRoom = null;
+  let myPlayerId = null;           // "player1" ή "player2"
+  let myName = "Παίκτης";
+  let opponentName = "Αντίπαλος";
+  let myScore = 0;
+  let opponentScore = 0;
+  let myChoice = null;
+  let opponentChoice = null;
+  let roundActive = false;
+  
+  // DOM elements
+  const connectionSpan = document.getElementById('connectionStatus');
+  const roomIdInput = document.getElementById('roomIdInput');
+  const createRoomBtn = document.getElementById('createRoomBtn');
+  const leaveRoomBtn = document.getElementById('leaveRoomBtn');
+  const roomInfoDiv = document.getElementById('roomInfo');
+  const myNameInput = document.getElementById('myNameInput');
+  const opponentNameInput = document.getElementById('opponentNameInput');
+  const myScoreSpan = document.getElementById('myScore');
+  const opponentScoreSpan = document.getElementById('opponentScore');
+  const myChoiceDisplay = document.getElementById('myChoiceDisplay');
+  const opponentChoiceDisplay = document.getElementById('opponentChoiceDisplay');
+  const resultMsgDiv = document.getElementById('resultMessage');
+  const myScoreLabel = document.getElementById('myScoreLabel');
+  const opponentScoreLabel = document.getElementById('opponentScoreLabel');
+  const resetGameBtn = document.getElementById('resetGameBtn');
+  
   const choicesMap = {
     rock: { name: "Πέτρα", emoji: "✊", beats: "scissors" },
     paper: { name: "Χαρτί", emoji: "✋", beats: "rock" },
     scissors: { name: "Ψαλίδι", emoji: "✌️", beats: "paper" }
   };
-  const choicesList = ['rock', 'paper', 'scissors'];
-
-  // State παιχνιδιού
-  let currentMode = "vsCPU";     // "vsCPU" ή "twoPlayer"
-  let player1Name = "Παίκτης Α";
-  let player2Name = "Παίκτης Β";
-  let playerScore1 = 0;
-  let playerScore2 = 0;
   
-  // PvP specific
-  let pvpWaitingFor = null;
-  let pvpChoiceP1 = null;
-  let pvpChoiceP2 = null;
-  
-  // DOM elements
-  const nameContainer = document.getElementById('nameInputsContainer');
-  const scorePanelDiv = document.getElementById('scorePanel');
-  const turnInfoDiv = document.getElementById('turnInfo');
-  const p1ChoiceDiv = document.getElementById('p1ChoiceDisplay');
-  const p2ChoiceDiv = document.getElementById('p2ChoiceDisplay');
-  const resultMsgDiv = document.getElementById('resultMessage');
-  const leaderboardDiv = document.getElementById('leaderboardList');
-  
-  // Leaderboard (localStorage)
-  let leaderboard = {};
-  
-  function loadLeaderboard() {
-    const stored = localStorage.getItem('rps_leaderboard_gkaras');
-    if(stored) {
-      try { leaderboard = JSON.parse(stored); } catch(e) { leaderboard = {}; }
-    } else { leaderboard = {}; }
-    renderLeaderboard();
-  }
-  function saveLeaderboard() {
-    localStorage.setItem('rps_leaderboard_gkaras', JSON.stringify(leaderboard));
-    renderLeaderboard();
-  }
-  function addWinToLeaderboard(playerName) {
-    if(!playerName || playerName.trim() === "" || playerName === "Υπολογιστής") return;
-    const name = playerName.trim();
-    leaderboard[name] = (leaderboard[name] || 0) + 1;
-    saveLeaderboard();
-  }
-  function resetLeaderboard() {
-    leaderboard = {};
-    saveLeaderboard();
-  }
-  function renderLeaderboard() {
-    if(!leaderboardDiv) return;
-    const sorted = Object.entries(leaderboard).sort((a,b) => b[1] - a[1]);
-    if(sorted.length === 0) {
-      leaderboardDiv.innerHTML = '<div class="leaderboard-item">✨ Κανένας παίκτης ακόμα</div>';
-      return;
-    }
-    let html = '';
-    for(let [name, wins] of sorted) {
-      html += `<div class="leaderboard-item"><span>${escapeHtml(name)}</span><span style="font-weight:bold;">${wins} νίκες</span></div>`;
-    }
-    leaderboardDiv.innerHTML = html;
-  }
-  function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-  
-  // Helpers UI
-  function updateUIForMode() {
-    if(currentMode === "vsCPU") {
-      nameContainer.innerHTML = `
-        <div class="player-name-field"><label>🧑 ΟΝΟΜΑ ΠΑΙΚΤΗ (VS CPU)</label><input type="text" id="p1NameInput" value="${escapeHtml(player1Name)}" placeholder="Όνομα"></div>
-        <div class="player-name-field"><label>🤖 ΥΠΟΛΟΓΙΣΤΗΣ</label><input type="text" id="p2NameInput" value="Υπολογιστής" disabled style="background:#e9ecef;"></div>
-      `;
-      document.getElementById('p1NameInput')?.addEventListener('change', (e) => { player1Name = e.target.value.trim() || "Παίκτης"; updateScorePanelLabels(); });
-      scorePanelDiv.innerHTML = `
-        <div class="score-card"><div class="score-label">🧑 ${escapeHtml(player1Name)}</div><div class="score-value" id="score1Val">0</div></div>
-        <div class="score-card"><div class="score-label">🤖 Υπολογιστής</div><div class="score-value" id="score2Val">0</div></div>
-      `;
-      document.getElementById('player1Label').innerHTML = `🧑 ${player1Name}`;
-      document.getElementById('player2Label').innerHTML = `🤖 Υπολογιστής`;
-      turnInfoDiv.style.display = 'none';
-      pvpWaitingFor = null;
-      pvpChoiceP1 = null;
-      pvpChoiceP2 = null;
-      p1ChoiceDiv.innerHTML = "—";
-      p2ChoiceDiv.innerHTML = "—";
-    } 
-    else { // twoPlayer
-      nameContainer.innerHTML = `
-        <div class="player-name-field"><label>👤 ΟΝΟΜΑ ΠΑΙΚΤΗ 1</label><input type="text" id="p1NameInput" value="${escapeHtml(player1Name)}" placeholder="Παίκτης 1"></div>
-        <div class="player-name-field"><label>👤 ΟΝΟΜΑ ΠΑΙΚΤΗ 2</label><input type="text" id="p2NameInput" value="${escapeHtml(player2Name)}" placeholder="Παίκτης 2"></div>
-      `;
-      const inp1 = document.getElementById('p1NameInput');
-      const inp2 = document.getElementById('p2NameInput');
-      if(inp1) inp1.addEventListener('change', (e) => { player1Name = e.target.value.trim() || "Παίκτης 1"; updateScorePanelLabels(); resetLocalPvpState(); });
-      if(inp2) inp2.addEventListener('change', (e) => { player2Name = e.target.value.trim() || "Παίκτης 2"; updateScorePanelLabels(); resetLocalPvpState(); });
-      scorePanelDiv.innerHTML = `
-        <div class="score-card"><div class="score-label">👤 ${escapeHtml(player1Name)}</div><div class="score-value" id="score1Val">0</div></div>
-        <div class="score-card"><div class="score-label">👤 ${escapeHtml(player2Name)}</div><div class="score-value" id="score2Val">0</div></div>
-      `;
-      document.getElementById('player1Label').innerHTML = `👤 ${player1Name}`;
-      document.getElementById('player2Label').innerHTML = `👤 ${player2Name}`;
-      turnInfoDiv.style.display = 'block';
-      resetLocalPvpState();
-    }
-    updateScoreValuesDisplay();
-  }
-  
-  function resetLocalPvpState() {
-    pvpWaitingFor = "p1";
-    pvpChoiceP1 = null;
-    pvpChoiceP2 = null;
-    p1ChoiceDiv.innerHTML = "—";
-    p2ChoiceDiv.innerHTML = "—";
-    turnInfoDiv.innerHTML = `🎲 Σειρά: <strong>${player1Name}</strong> (επέλεξε κίνηση)`;
-    resultMsgDiv.innerHTML = "👥 PvP mode: πρώτος παίκτης διαλέγει, μετά ο δεύτερος.";
-  }
-  
-  function updateScorePanelLabels() {
-    if(currentMode === "vsCPU") {
-      const lbl1 = document.querySelector('#scorePanel .score-card:first-child .score-label');
-      if(lbl1) lbl1.innerHTML = `🧑 ${player1Name}`;
-      document.getElementById('player1Label').innerHTML = `🧑 ${player1Name}`;
+  function updateUI() {
+    myScoreSpan.innerText = myScore;
+    opponentScoreSpan.innerText = opponentScore;
+    myScoreLabel.innerHTML = `🧑 ${myName}`;
+    opponentScoreLabel.innerHTML = `🤝 ${opponentName}`;
+    opponentNameInput.value = opponentName;
+    if (myChoice) {
+      myChoiceDisplay.innerHTML = `${choicesMap[myChoice].emoji} ${choicesMap[myChoice].name}`;
     } else {
-      const labels = document.querySelectorAll('#scorePanel .score-card .score-label');
-      if(labels[0]) labels[0].innerHTML = `👤 ${player1Name}`;
-      if(labels[1]) labels[1].innerHTML = `👤 ${player2Name}`;
-      document.getElementById('player1Label').innerHTML = `👤 ${player1Name}`;
-      document.getElementById('player2Label').innerHTML = `👤 ${player2Name}`;
-      if(turnInfoDiv && pvpWaitingFor) {
-        turnInfoDiv.innerHTML = `🎲 Σειρά: <strong>${pvpWaitingFor === 'p1' ? player1Name : player2Name}</strong> (επέλεξε κίνηση)`;
-      }
+      myChoiceDisplay.innerHTML = "—";
     }
-  }
-  
-  function updateScoreValuesDisplay() {
-    const score1El = document.getElementById('score1Val');
-    const score2El = document.getElementById('score2Val');
-    if(score1El) score1El.innerText = playerScore1;
-    if(score2El) score2El.innerText = playerScore2;
+    if (opponentChoice && roundActive === false) {
+      opponentChoiceDisplay.innerHTML = `${choicesMap[opponentChoice].emoji} ${choicesMap[opponentChoice].name}`;
+    } else if (opponentChoice && roundActive === true) {
+      opponentChoiceDisplay.innerHTML = "❓ Κρυφή";
+    } else {
+      opponentChoiceDisplay.innerHTML = "❓ Κρυφή";
+    }
   }
   
   function determineWinner(choiceA, choiceB) {
-    if(choiceA === choiceB) return 'tie';
-    if(choicesMap[choiceA].beats === choiceB) return 'playerA';
+    if (choiceA === choiceB) return 'tie';
+    if (choicesMap[choiceA].beats === choiceB) return 'playerA';
     return 'playerB';
   }
   
-  function awardWinToName(name) {
-    if(!name || name === "Υπολογιστής") return;
-    addWinToLeaderboard(name);
-  }
-  
-  // VS CPU round
-  function playVsCPU(playerChoice) {
-    const cpuChoice = choicesList[Math.floor(Math.random()*3)];
-    const winner = determineWinner(playerChoice, cpuChoice);
-    let msg = "";
-    let playerWon = false;
-    if(winner === 'tie') {
-      msg = `🤝 Ισοπαλία! ${choicesMap[playerChoice].emoji} ${choicesMap[playerChoice].name} & ${choicesMap[cpuChoice].emoji} ${choicesMap[cpuChoice].name}`;
-    } else if(winner === 'playerA') {
-      playerScore1++;
-      playerWon = true;
-      msg = `🎉 Νίκησες! ${choicesMap[playerChoice].emoji} ${choicesMap[playerChoice].name} νικά ${choicesMap[cpuChoice].emoji} ${choicesMap[cpuChoice].name}! +1 νίκη`;
+  function evaluateRound(p1Choice, p2Choice, p1Score, p2Score) {
+    const winner = determineWinner(p1Choice, p2Choice);
+    let newP1Score = p1Score;
+    let newP2Score = p2Score;
+    let message = "";
+    const p1Name = (myPlayerId === 'player1') ? myName : opponentName;
+    const p2Name = (myPlayerId === 'player1') ? opponentName : myName;
+    if (winner === 'tie') {
+      message = `🤝 Ισοπαλία! ${choicesMap[p1Choice].emoji} & ${choicesMap[p2Choice].emoji}`;
+    } else if (winner === 'playerA') {
+      newP1Score++;
+      message = `🏆 Νίκησε ο ${p1Name}! ${choicesMap[p1Choice].emoji} νικά ${choicesMap[p2Choice].emoji}`;
     } else {
-      playerScore2++;
-      msg = `😵 Ηττήθηκες! ${choicesMap[cpuChoice].emoji} ${choicesMap[cpuChoice].name} νικά ${choicesMap[playerChoice].emoji} ${choicesMap[playerChoice].name}.`;
+      newP2Score++;
+      message = `🏆 Νίκησε ο ${p2Name}! ${choicesMap[p2Choice].emoji} νικά ${choicesMap[p1Choice].emoji}`;
     }
-    updateScoreValuesDisplay();
-    p1ChoiceDiv.innerHTML = `${choicesMap[playerChoice].emoji} ${choicesMap[playerChoice].name}`;
-    p2ChoiceDiv.innerHTML = `${choicesMap[cpuChoice].emoji} ${choicesMap[cpuChoice].name}`;
-    resultMsgDiv.innerHTML = msg;
-    if(playerWon) awardWinToName(player1Name);
+    return { newP1Score, newP2Score, message };
   }
   
-  // PvP turn
-  function pvpMakeChoice(playerId, choiceKey) {
-    if(currentMode !== "twoPlayer") return;
-    if(pvpWaitingFor !== playerId) {
-      resultMsgDiv.innerHTML = `⏳ Περιμένουμε τον ${pvpWaitingFor === 'p1' ? player1Name : player2Name} να επιλέξει!`;
+  function sendMyChoice(choice) {
+    if (!currentRoom || !myPlayerId) {
+      resultMsgDiv.innerHTML = "❌ Μπες πρώτα σε κάποιο δωμάτιο.";
       return;
     }
-    if(playerId === 'p1') {
-      pvpChoiceP1 = choiceKey;
-      p1ChoiceDiv.innerHTML = `${choicesMap[choiceKey].emoji} ${choicesMap[choiceKey].name}`;
-      pvpWaitingFor = 'p2';
-      turnInfoDiv.innerHTML = `🎲 Σειρά: <strong>${player2Name}</strong> (επέλεξε κίνηση)`;
-      resultMsgDiv.innerHTML = `✅ ${player1Name} επέλεξε! Τώρα η σειρά του ${player2Name}.`;
-    } else if(playerId === 'p2') {
-      pvpChoiceP2 = choiceKey;
-      p2ChoiceDiv.innerHTML = `${choicesMap[choiceKey].emoji} ${choicesMap[choiceKey].name}`;
-      const winner = determineWinner(pvpChoiceP1, pvpChoiceP2);
-      let msg = "";
-      if(winner === 'tie') {
-        msg = `🤝 Ισοπαλία! ${choicesMap[pvpChoiceP1].emoji} ${choicesMap[pvpChoiceP1].name} & ${choicesMap[pvpChoiceP2].emoji} ${choicesMap[pvpChoiceP2].name}`;
-      } else if(winner === 'playerA') {
-        playerScore1++;
-        msg = `🏆 Νίκησε ο ${player1Name}! ${choicesMap[pvpChoiceP1].emoji} ${choicesMap[pvpChoiceP1].name} νικά ${choicesMap[pvpChoiceP2].emoji} ${choicesMap[pvpChoiceP2].name}`;
-        awardWinToName(player1Name);
-      } else {
-        playerScore2++;
-        msg = `🏆 Νίκησε ο ${player2Name}! ${choicesMap[pvpChoiceP2].emoji} ${choicesMap[pvpChoiceP2].name} νικά ${choicesMap[pvpChoiceP1].emoji} ${choicesMap[pvpChoiceP1].name}`;
-        awardWinToName(player2Name);
+    myChoice = choice;
+    const updates = {};
+    updates[`rooms/${currentRoom}/players/${myPlayerId}/choice`] = choice;
+    updates[`rooms/${currentRoom}/players/${myPlayerId}/name`] = myName;
+    database.ref().update(updates);
+    resultMsgDiv.innerHTML = `✅ Επέλεξες ${choicesMap[choice].name}. Περιμένουμε τον αντίπαλο...`;
+    updateUI();
+  }
+  
+  function listenToRoom(roomId) {
+    const roomRef = database.ref(`rooms/${roomId}`);
+    roomRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
+      if (data.player1 && data.player1.score !== undefined) {
+        if (myPlayerId === 'player1') myScore = data.player1.score;
+        else opponentScore = data.player1.score;
       }
-      updateScoreValuesDisplay();
-      resultMsgDiv.innerHTML = msg;
-      // reset round
-      pvpChoiceP1 = null;
-      pvpChoiceP2 = null;
-      pvpWaitingFor = 'p1';
-      turnInfoDiv.innerHTML = `🎲 Σειρά: <strong>${player1Name}</strong> (επέλεξε κίνηση)`;
-      p1ChoiceDiv.innerHTML = "—";
-      p2ChoiceDiv.innerHTML = "—";
-    }
-  }
-  
-  function resetSessionScores() {
-    playerScore1 = 0;
-    playerScore2 = 0;
-    updateScoreValuesDisplay();
-    if(currentMode === "twoPlayer") {
-      pvpChoiceP1 = null;
-      pvpChoiceP2 = null;
-      pvpWaitingFor = 'p1';
-      p1ChoiceDiv.innerHTML = "—";
-      p2ChoiceDiv.innerHTML = "—";
-      turnInfoDiv.innerHTML = `🎲 Σειρά: <strong>${player1Name}</strong> (επέλεξε κίνηση)`;
-      resultMsgDiv.innerHTML = "🔄 Τα σκορ μηδενίστηκαν! Νέος γύρος PvP.";
-    } else {
-      p1ChoiceDiv.innerHTML = "—";
-      p2ChoiceDiv.innerHTML = "—";
-      resultMsgDiv.innerHTML = "✨ Τα σκορ μηδενίστηκαν! Παίξε ξανά ✨";
-    }
-  }
-  
-  function attachChoiceListeners() {
-    document.querySelectorAll('.choice-btn').forEach(btn => {
-      btn.removeEventListener('click', choiceHandler);
-      btn.addEventListener('click', choiceHandler);
+      if (data.player2 && data.player2.score !== undefined) {
+        if (myPlayerId === 'player2') myScore = data.player2.score;
+        else opponentScore = data.player2.score;
+      }
+      if (data.player1 && data.player1.name) {
+        if (myPlayerId === 'player1') myName = data.player1.name;
+        else opponentName = data.player1.name;
+      }
+      if (data.player2 && data.player2.name) {
+        if (myPlayerId === 'player2') myName = data.player2.name;
+        else opponentName = data.player2.name;
+      }
+      const p1Choice = data.player1?.choice;
+      const p2Choice = data.player2?.choice;
+      if (myPlayerId === 'player1') {
+        if (p1Choice) myChoice = p1Choice;
+        opponentChoice = p2Choice;
+      } else {
+        opponentChoice = p1Choice;
+        if (p2Choice) myChoice = p2Choice;
+      }
+      if (p1Choice && p2Choice && roundActive === false) {
+        roundActive = true;
+        const p1ScoreOld = (data.player1?.score) || 0;
+        const p2ScoreOld = (data.player2?.score) || 0;
+        const { newP1Score, newP2Score, message } = evaluateRound(p1Choice, p2Choice, p1ScoreOld, p2ScoreOld);
+        const cleanUpdates = {};
+        cleanUpdates[`rooms/${roomId}/player1/choice`] = null;
+        cleanUpdates[`rooms/${roomId}/player2/choice`] = null;
+        cleanUpdates[`rooms/${roomId}/player1/score`] = newP1Score;
+        cleanUpdates[`rooms/${roomId}/player2/score`] = newP2Score;
+        database.ref().update(cleanUpdates);
+        resultMsgDiv.innerHTML = message;
+        roundActive = false;
+        myChoice = null;
+        opponentChoice = null;
+        updateUI();
+      } else {
+        updateUI();
+      }
     });
   }
-  function choiceHandler(e) {
-    const choice = e.currentTarget.getAttribute('data-choice');
-    if(!choice) return;
-    if(currentMode === "vsCPU") {
-      playVsCPU(choice);
-    } else if(currentMode === "twoPlayer") {
-      if(pvpWaitingFor === 'p1') pvpMakeChoice('p1', choice);
-      else if(pvpWaitingFor === 'p2') pvpMakeChoice('p2', choice);
-      else resultMsgDiv.innerHTML = "Αναμομή επανεκκίνησης γύρου...";
+  
+  function joinOrCreateRoom(roomId) {
+    if (!roomId || roomId.trim() === "") {
+      alert("Παρακαλώ βάλε ένα όνομα δωματίου");
+      return;
     }
+    currentRoom = roomId.trim();
+    const myNameValue = myNameInput.value.trim();
+    if (myNameValue !== "") myName = myNameValue;
+    else myName = "Παίκτης";
+    
+    const roomRef = database.ref(`rooms/${currentRoom}`);
+    roomRef.once('value', (snapshot) => {
+      const data = snapshot.val();
+      let assignedId = null;
+      if (!data) {
+        assignedId = 'player1';
+        roomRef.set({
+          player1: { name: myName, score: 0, choice: null },
+          player2: { name: "Αναμονή...", score: 0, choice: null }
+        });
+      } else if (!data.player1 || !data.player1.name || data.player1.name === "Αναμονή...") {
+        assignedId = 'player1';
+        roomRef.child('player1').set({ name: myName, score: data.player1?.score || 0, choice: null });
+      } else if (!data.player2 || !data.player2.name || data.player2.name === "Αναμονή...") {
+        assignedId = 'player2';
+        roomRef.child('player2').set({ name: myName, score: data.player2?.score || 0, choice: null });
+      } else {
+        alert("Το δωμάτιο είναι ήδη γεμάτο. Δημιούργησε ένα νέο.");
+        return;
+      }
+      myPlayerId = assignedId;
+      connectionSpan.innerHTML = "● Συνδεδεμένο";
+      roomInfoDiv.innerHTML = `🔒 Είσαι στο δωμάτιο: <strong>${currentRoom}</strong> ως ${myPlayerId === 'player1' ? 'Παίκτης 1' : 'Παίκτης 2'}. Μοιράσου τον κωδικό με τον φίλο σου!`;
+      myScore = 0;
+      opponentScore = 0;
+      myChoice = null;
+      opponentChoice = null;
+      roundActive = false;
+      listenToRoom(currentRoom);
+      updateUI();
+    });
   }
   
-  function setMode(mode) {
-    currentMode = mode;
-    playerScore1 = 0;
-    playerScore2 = 0;
-    if(mode === "vsCPU") {
-      player1Name = document.getElementById('p1NameInput')?.value.trim() || "Παίκτης";
-      player2Name = "Υπολογιστής";
-    } else {
-      player1Name = document.getElementById('p1NameInput')?.value.trim() || "Παίκτης 1";
-      player2Name = document.getElementById('p2NameInput')?.value.trim() || "Παίκτης 2";
+  function leaveRoom() {
+    if (!currentRoom) return;
+    if (myPlayerId) {
+      database.ref(`rooms/${currentRoom}/players/${myPlayerId}`).remove();
     }
-    updateUIForMode();
-    attachChoiceListeners();
-    document.getElementById('modeVsCPU').classList.toggle('active', mode === 'vsCPU');
-    document.getElementById('modeTwoPlayer').classList.toggle('active', mode === 'twoPlayer');
+    database.ref(`rooms/${currentRoom}`).off();
+    currentRoom = null;
+    myPlayerId = null;
+    myName = "Παίκτης";
+    opponentName = "Αντίπαλος";
+    myScore = 0;
+    opponentScore = 0;
+    myChoice = null;
+    opponentChoice = null;
+    connectionSpan.innerHTML = "● Αποσυνδεδεμένο";
+    roomInfoDiv.innerHTML = "⚡ Δημιούργησε ή πληκτρολόγησε έναν κοινό κωδικό με τον φίλο σου.";
+    opponentNameInput.value = "Αναμονή...";
+    updateUI();
+    resultMsgDiv.innerHTML = "✨ Βγήκες από το δωμάτιο. Μπες ξανά για να παίξεις ✨";
   }
   
-  function init() {
-    loadLeaderboard();
-    player1Name = "Παίκτης";
-    player2Name = "Υπολογιστής";
-    currentMode = "vsCPU";
-    playerScore1 = 0;
-    playerScore2 = 0;
-    updateUIForMode();
-    attachChoiceListeners();
-    document.getElementById('modeVsCPU').addEventListener('click', () => setMode('vsCPU'));
-    document.getElementById('modeTwoPlayer').addEventListener('click', () => setMode('twoPlayer'));
-    document.getElementById('resetGameBtn').addEventListener('click', () => resetSessionScores());
-    document.getElementById('resetLeaderboardBtn').addEventListener('click', () => { if(confirm("Μηδενισμός όλων των στατιστικών κατάταξης;")) resetLeaderboard(); });
+  function resetScores() {
+    if (!currentRoom) return;
+    const updates = {};
+    updates[`rooms/${currentRoom}/player1/score`] = 0;
+    updates[`rooms/${currentRoom}/player2/score`] = 0;
+    database.ref().update(updates);
+    resultMsgDiv.innerHTML = "📊 Τα σκορ μηδενίστηκαν! Ξεκινήστε νέο γύρο.";
   }
   
-  init();
+  createRoomBtn.addEventListener('click', () => {
+    const roomVal = roomIdInput.value.trim();
+    if (roomVal === "") {
+      alert("Γράψε ένα όνομα δωματίου (π.χ. BattleRoom)");
+      return;
+    }
+    joinOrCreateRoom(roomVal);
+  });
+  leaveRoomBtn.addEventListener('click', leaveRoom);
+  resetGameBtn.addEventListener('click', resetScores);
+  myNameInput.addEventListener('change', () => {
+    if (currentRoom && myPlayerId) {
+      const updates = {};
+      updates[`rooms/${currentRoom}/players/${myPlayerId}/name`] = myNameInput.value.trim() || "Παίκτης";
+      database.ref().update(updates);
+    }
+  });
+  document.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const choice = e.currentTarget.getAttribute('data-choice');
+      if (!currentRoom) {
+        resultMsgDiv.innerHTML = "⚠️ Μπες πρώτα σε ένα δωμάτιο.";
+        return;
+      }
+      sendMyChoice(choice);
+    });
+  });
+  
+  updateUI();
 </script>
 </body>
 </html>
